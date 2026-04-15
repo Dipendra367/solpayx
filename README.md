@@ -68,6 +68,7 @@ Create a .env.local file:
 Bash
 HELIUS_RPC_URL=your_helius_url_here
 NEXT_PUBLIC_TREASURY_ADDRESS=your_treasury_wallet
+
 🛡️ Security
 Non-Custodial: The app never stores private keys. Signing happens via Phantom/Solflare.
 

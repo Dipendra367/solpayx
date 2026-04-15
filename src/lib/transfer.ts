@@ -39,6 +39,7 @@ export async function sendUSDC(
 
     const transaction = new Transaction()
 
+    // Ensure recipient ATA exists
     try {
       await getAccount(connection, recipientATA)
     } catch {
@@ -49,6 +50,7 @@ export async function sendUSDC(
       )
     }
 
+    // Ensure treasury ATA exists
     try {
       await getAccount(connection, treasuryATA)
     } catch {
@@ -59,6 +61,7 @@ export async function sendUSDC(
       )
     }
 
+    // Transfer instructions
     transaction.add(
       createTransferInstruction(senderATA, recipientATA, senderPublicKey, sendAmount)
     )
@@ -66,7 +69,8 @@ export async function sendUSDC(
       createTransferInstruction(senderATA, treasuryATA, senderPublicKey, feeAmount)
     )
 
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized')
+    // 🔥 ALWAYS fresh blockhash BEFORE signing
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
     transaction.recentBlockhash = blockhash
     transaction.feePayer = senderPublicKey
 
@@ -75,40 +79,28 @@ export async function sendUSDC(
 
     onStatus?.('Sending to Solana...')
     const signature = await connection.sendRawTransaction(signed.serialize(), {
-      skipPreflight: true,
+      skipPreflight: false, // ✅ important fix
       maxRetries: 3,
     })
 
     onStatus?.('Confirming transaction...')
-    let confirmed = false
-    for (let i = 0; i < 30; i++) {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      const status = await connection.getSignatureStatus(signature)
-      if (
-        status?.value?.confirmationStatus === 'confirmed' ||
-        status?.value?.confirmationStatus === 'finalized'
-      ) {
-        confirmed = true
-        break
-      }
-      if (status?.value?.err) {
-        throw new Error('Transaction failed on chain')
-      }
-    }
-
-    if (!confirmed) {
-      throw new Error('Transaction timed out — check Solscan to verify')
-    }
+    await connection.confirmTransaction({
+      signature,
+      blockhash,
+      lastValidBlockHeight,
+    })
 
     onStatus?.('Sent successfully!')
     return { success: true, signature }
 
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    // ✅ If already processed, it's actually a success!
+
+    // ✅ Treat duplicate as success
     if (message.includes('already been processed')) {
       return { success: true, error: message }
     }
+
     return { success: false, error: message }
   }
 }
@@ -123,9 +115,11 @@ export async function sendUSDCViaProgram(
   try {
     const program = getProgram(connection, wallet)
     const recipient = new PublicKey(recipientAddress)
+
     const senderATA = await getAssociatedTokenAddress(USDC_MINT, wallet.publicKey)
     const recipientATA = await getAssociatedTokenAddress(USDC_MINT, recipient)
     const treasuryATA = await getAssociatedTokenAddress(USDC_MINT, TREASURY)
+
     const mint = await getMint(connection, USDC_MINT)
     const amountInDecimals = new BN(amount * Math.pow(10, mint.decimals))
 
@@ -151,15 +145,25 @@ export async function sendUSDCViaProgram(
       )
     }
 
+    // ✅ FIX setup transaction too
     if (setupTx.instructions.length > 0) {
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized')
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
       setupTx.recentBlockhash = blockhash
       setupTx.feePayer = wallet.publicKey
+
       const signed = await wallet.signTransaction(setupTx)
-      const sig = await connection.sendRawTransaction(signed.serialize())
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight })
+      const sig = await connection.sendRawTransaction(signed.serialize(), {
+        skipPreflight: false,
+      })
+
+      await connection.confirmTransaction({
+        signature: sig,
+        blockhash,
+        lastValidBlockHeight,
+      })
     }
 
+    // Main program tx (Anchor handles blockhash internally)
     const tx = await program.methods
       .sendRemittance(amountInDecimals, memo)
       .accounts({
@@ -172,11 +176,14 @@ export async function sendUSDCViaProgram(
       .rpc()
 
     return { success: true, signature: tx }
+
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+
     if (message.includes('already been processed')) {
       return { success: true, error: message }
     }
+
     return { success: false, error: message }
   }
 }

@@ -1,36 +1,17 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+🏗️ SolPayX: Full-Stack Solana Remittance & BlinksSolPayX is a decentralized payment and remittance platform designed for speed, low fees, and viral distribution. It combines the power of the Solana Blockchain with Actions (Blinks) to allow instant USDC transfers directly through a URL or social media feed.🚀 Live DemoWebsite: https://solpayx.vercel.appPayment Link: Pay via SolPayX✨ Features🏦 On-Chain ArchitectureAnchor Smart Contract: A custom-built Rust contract handles the payment logic on-chain.Automated Fee Split: Every transaction automatically splits a 0.1% platform fee to a dedicated treasury wallet, ensuring a sustainable business model.SPL Token Support: Optimized for USDC (6 decimals) with real-time balance fetching.🔗 Viral Payments (Blinks)Solana Actions API: Integrated /api/actions/remit endpoint to support Blinks.Social Pay: Share a single link on Twitter/X, and users can pay you without leaving their feed.Dynamic Routing: Personalized payment pages for every user via /pay/[wallet_address].💻 Developer ExperienceHelius RPC Integration: Uses high-performance RPC nodes and WebSockets for real-time transaction monitoring.Modern UI/UX: Built with a "Glassmorphism" aesthetic using Tailwind CSS and Framer Motion.Solscan Integration: Every transaction generates a direct link to the block explorer for transparency.🛠️ Tech StackLayerTechnologyFrontendNext.js 14 (App Router), Tailwind CSSBlockchainSolana Web3.js, @solana/actions, @solana/spl-tokenSmart ContractsAnchor Framework (Rust)InfrastructureHelius RPC, VercelState ManagementReact Hooks & WebSockets📂 Project StructurePlaintext├── anchor/              # Rust Smart Contract (On-chain logic)
+├── public/              # Static assets & Action icons
+├── src/
+│   ├── app/
+│   │   ├── api/         # Blinks/Actions implementation
+│   │   ├── pay/         # Dynamic [wallet] payment routes
+│   │   └── dashboard/   # User wallet & history views
+│   ├── components/      # Glassmorphism UI components
+│   └── lib/             # Helius config & Blockchain helpers
+└── .env.example         # Template for secret keys
+⚙️ Local SetupClone the Repository:Bashgit clone https://github.com/YOUR_USERNAME/solpayx.git
+cd solpayx
+Install Dependencies:Bashnpm install
+Environment Variables:Create a .env.local file and add the following:BashHELIUS_RPC_URL=your_helius_url_here
+NEXT_PUBLIC_TREASURY_ADDRESS=your_treasury_wallet
+Run Development Server:Bashnpm run dev
+🛡️ SecurityNon-Custodial: The app never stores private keys. All signing happens via the user's wallet (Phantom/Solflare).Environment Safety: Critical RPC keys and treasury addresses are managed via server-side environment variables to prevent leaks.🚫 Intellectual Property & UsageCopyright © 2026 Dipendra. All rights reserved. This project is for portfolio and demonstration purposes only. Unauthorized copying of the code, modification, or commercial distribution is prohibited without explicit permission.

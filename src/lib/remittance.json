@@ -1,0 +1,118 @@
+{
+  "address": "72citsVT8pcy5orD5HVAS9UN1aBspCkui1NmcGAB8Xsg",
+  "metadata": {
+    "name": "remittance",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "SolPayX remittance smart contract"
+  },
+  "instructions": [
+    {
+      "name": "send_remittance",
+      "discriminator": [
+        58,
+        184,
+        30,
+        1,
+        90,
+        156,
+        238,
+        87
+      ],
+      "accounts": [
+        {
+          "name": "sender",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "sender_token_account",
+          "writable": true
+        },
+        {
+          "name": "recipient_token_account",
+          "writable": true
+        },
+        {
+          "name": "treasury_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "memo",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "RemittanceEvent",
+      "discriminator": [
+        174,
+        3,
+        121,
+        151,
+        250,
+        227,
+        101,
+        99
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidAmount",
+      "msg": "Amount must be greater than zero"
+    },
+    {
+      "code": 6001,
+      "name": "MemoTooLong",
+      "msg": "Memo must be 100 characters or less"
+    }
+  ],
+  "types": [
+    {
+      "name": "RemittanceEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "sender",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          },
+          {
+            "name": "memo",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}

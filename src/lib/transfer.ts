@@ -75,18 +75,32 @@ export async function sendUSDC(
 
     onStatus?.('Sending to Solana...')
     const signature = await connection.sendRawTransaction(signed.serialize(), {
-      skipPreflight: false,
-      preflightCommitment: 'confirmed',
+      skipPreflight: true,
       maxRetries: 3,
     })
 
     onStatus?.('Confirming transaction...')
-    await connection.confirmTransaction(
-      { signature, blockhash, lastValidBlockHeight },
-      'confirmed'
-    )
+    let confirmed = false
+    for (let i = 0; i < 30; i++) {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      const status = await connection.getSignatureStatus(signature)
+      if (
+        status?.value?.confirmationStatus === 'confirmed' ||
+        status?.value?.confirmationStatus === 'finalized'
+      ) {
+        confirmed = true
+        break
+      }
+      if (status?.value?.err) {
+        throw new Error('Transaction failed on chain')
+      }
+    }
 
-    onStatus?.('✅ Sent successfully!')
+    if (!confirmed) {
+      throw new Error('Transaction timed out — check Solscan to verify')
+    }
+
+    onStatus?.('Sent successfully!')
     return { success: true, signature }
 
   } catch (error: unknown) {

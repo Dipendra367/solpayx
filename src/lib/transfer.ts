@@ -101,14 +101,46 @@ export async function sendUSDCViaProgram(
   try {
     const program = getProgram(connection, wallet)
     const recipient = new PublicKey(recipientAddress)
-
     const senderATA = await getAssociatedTokenAddress(USDC_MINT, wallet.publicKey)
     const recipientATA = await getAssociatedTokenAddress(USDC_MINT, recipient)
     const treasuryATA = await getAssociatedTokenAddress(USDC_MINT, TREASURY)
-
     const mint = await getMint(connection, USDC_MINT)
     const amountInDecimals = new BN(amount * Math.pow(10, mint.decimals))
 
+    // ✅ Auto-create token accounts if they don't exist
+    const setupTx = new Transaction()
+
+    try {
+      await getAccount(connection, recipientATA)
+    } catch {
+      setupTx.add(
+        createAssociatedTokenAccountInstruction(
+          wallet.publicKey, recipientATA, recipient, USDC_MINT
+        )
+      )
+    }
+
+    try {
+      await getAccount(connection, treasuryATA)
+    } catch {
+      setupTx.add(
+        createAssociatedTokenAccountInstruction(
+          wallet.publicKey, treasuryATA, TREASURY, USDC_MINT
+        )
+      )
+    }
+
+    // Send setup transaction first if needed
+    if (setupTx.instructions.length > 0) {
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
+      setupTx.recentBlockhash = blockhash
+      setupTx.feePayer = wallet.publicKey
+      const signed = await wallet.signTransaction(setupTx)
+      const sig = await connection.sendRawTransaction(signed.serialize())
+      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight })
+    }
+
+    // Now call the Anchor program
     const tx = await program.methods
       .sendRemittance(amountInDecimals, memo)
       .accounts({

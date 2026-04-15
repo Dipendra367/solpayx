@@ -66,7 +66,7 @@ export async function sendUSDC(
       createTransferInstruction(senderATA, treasuryATA, senderPublicKey, feeAmount)
     )
 
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized')
     transaction.recentBlockhash = blockhash
     transaction.feePayer = senderPublicKey
 
@@ -74,7 +74,11 @@ export async function sendUSDC(
     const signed = await signTransaction(transaction)
 
     onStatus?.('Sending to Solana...')
-    const signature = await connection.sendRawTransaction(signed.serialize())
+    const signature = await connection.sendRawTransaction(signed.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+      maxRetries: 3,
+    })
 
     onStatus?.('Confirming transaction...')
     await connection.confirmTransaction(
@@ -82,11 +86,15 @@ export async function sendUSDC(
       'confirmed'
     )
 
-    onStatus?.('Sent successfully!')
+    onStatus?.('✅ Sent successfully!')
     return { success: true, signature }
 
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+    // ✅ If already processed, it's actually a success!
+    if (message.includes('already been processed')) {
+      return { success: true, error: message }
+    }
     return { success: false, error: message }
   }
 }
@@ -107,7 +115,6 @@ export async function sendUSDCViaProgram(
     const mint = await getMint(connection, USDC_MINT)
     const amountInDecimals = new BN(amount * Math.pow(10, mint.decimals))
 
-    // ✅ Auto-create token accounts if they don't exist
     const setupTx = new Transaction()
 
     try {
@@ -130,9 +137,8 @@ export async function sendUSDCViaProgram(
       )
     }
 
-    // Send setup transaction first if needed
     if (setupTx.instructions.length > 0) {
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized')
       setupTx.recentBlockhash = blockhash
       setupTx.feePayer = wallet.publicKey
       const signed = await wallet.signTransaction(setupTx)
@@ -140,7 +146,6 @@ export async function sendUSDCViaProgram(
       await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight })
     }
 
-    // Now call the Anchor program
     const tx = await program.methods
       .sendRemittance(amountInDecimals, memo)
       .accounts({
@@ -155,6 +160,9 @@ export async function sendUSDCViaProgram(
     return { success: true, signature: tx }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+    if (message.includes('already been processed')) {
+      return { success: true, error: message }
+    }
     return { success: false, error: message }
   }
 }

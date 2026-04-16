@@ -27,15 +27,26 @@ export default function PayPage() {
     ? window.location.origin
     : 'https://solpayx.vercel.app'
 
-  // ✅ Mobile deep-link: redirect into Phantom's in-app browser
+  // ✅ Correct Phantom mobile deep-link
   useEffect(() => {
     const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
     const isInPhantom = navigator.userAgent.includes('Phantom')
 
     if (mobile && !isInPhantom && !connected) {
-      const currentUrl = encodeURIComponent(window.location.href)
-      const phantomDeepLink = `https://phantom.app/ul/browse/${currentUrl}?ref=${encodeURIComponent(window.location.origin)}`
-      window.location.href = phantomDeepLink
+      const currentUrl = window.location.href
+      const ref = window.location.origin
+
+      const deepLink = `phantom://browse?url=${encodeURIComponent(currentUrl)}&ref=${encodeURIComponent(ref)}`
+      const universalLink = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(ref)}`
+
+      // Try deep link first (opens app if installed), fallback to universal after 1.5s
+      const timeout = setTimeout(() => {
+        window.location.href = universalLink
+      }, 1500)
+
+      window.location.href = deepLink
+
+      return () => clearTimeout(timeout)
     }
   }, [connected])
 

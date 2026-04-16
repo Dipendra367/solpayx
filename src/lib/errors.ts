@@ -1,20 +1,25 @@
 export function parseTransactionError(error: unknown): string {
   const message = error instanceof Error ? error.message : 'Unknown error'
+  const logs = (error instanceof Error && 'logs' in error) 
+    ? (error as Error & { logs: string[] }).logs?.join(' ') || ''
+    : ''
 
   if (message.includes('already been processed'))
     return '✅ Transaction already confirmed!'
 
-  if (message.includes('no record of a prior credit') || message.includes('insufficient funds'))
-    return '❌ Insufficient USDC balance. Please top up your wallet.'
+  if (
+    message.includes('no record of a prior credit') ||
+    message.includes('insufficient funds') ||
+    message.includes('0x1') ||
+    logs.includes('insufficient funds')
+  )
+    return '❌ Insufficient USDC balance. You don\'t have enough USDC to send.'
 
   if (message.includes('User rejected') || message.includes('Transaction cancelled'))
     return '❌ Transaction cancelled.'
 
   if (message.includes('blockhash not found') || message.includes('Blockhash not found'))
     return '❌ Network timeout. Please try again.'
-
-  if (message.includes('0x1'))
-    return '❌ Insufficient SOL for fees. Add more SOL to your wallet.'
 
   if (message.includes('invalid account data'))
     return '❌ Invalid wallet address. Please check the recipient.'

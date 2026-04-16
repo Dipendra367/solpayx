@@ -10,6 +10,7 @@ import {
 import { AnchorWallet } from '@solana/wallet-adapter-react'
 import { BN } from '@coral-xyz/anchor'
 import { getProgram } from './program'
+import { parseTransactionError } from './errors'
 
 export const USDC_MINT = new PublicKey('EGy3fLWXRMLnaFvCUHhV9cTZE2q6Amcs6ktiJQVDQXcH')
 const FEE_RATE = 0.001
@@ -25,7 +26,18 @@ export async function sendUSDC(
 ) {
   try {
     onStatus?.('Building transaction...')
-    const recipient = new PublicKey(recipientAddress)
+
+    let recipient: PublicKey
+    try {
+      recipient = new PublicKey(recipientAddress)
+    } catch {
+      return { success: false, error: '❌ Invalid recipient address.' }
+    }
+
+    if (amount <= 0) {
+      return { success: false, error: '❌ Amount must be greater than 0.' }
+    }
+
     const mint = await getMint(connection, USDC_MINT)
     const decimals = mint.decimals
 
@@ -37,9 +49,18 @@ export async function sendUSDC(
     const recipientATA = await getAssociatedTokenAddress(USDC_MINT, recipient)
     const treasuryATA = await getAssociatedTokenAddress(USDC_MINT, TREASURY)
 
+    // Check sender balance
+    try {
+      const senderAccount = await getAccount(connection, senderATA)
+      if (Number(senderAccount.amount) < totalAmount) {
+        return { success: false, error: '❌ Insufficient USDC balance.' }
+      }
+    } catch {
+      return { success: false, error: '❌ You have no USDC. Please top up your wallet first.' }
+    }
+
     const transaction = new Transaction()
 
-    // Ensure recipient ATA exists
     try {
       await getAccount(connection, recipientATA)
     } catch {
@@ -50,7 +71,6 @@ export async function sendUSDC(
       )
     }
 
-    // Ensure treasury ATA exists
     try {
       await getAccount(connection, treasuryATA)
     } catch {
@@ -61,7 +81,6 @@ export async function sendUSDC(
       )
     }
 
-    // Transfer instructions
     transaction.add(
       createTransferInstruction(senderATA, recipientATA, senderPublicKey, sendAmount)
     )
@@ -69,8 +88,7 @@ export async function sendUSDC(
       createTransferInstruction(senderATA, treasuryATA, senderPublicKey, feeAmount)
     )
 
-    // 🔥 ALWAYS fresh blockhash BEFORE signing
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized')
     transaction.recentBlockhash = blockhash
     transaction.feePayer = senderPublicKey
 
@@ -79,29 +97,24 @@ export async function sendUSDC(
 
     onStatus?.('Sending to Solana...')
     const signature = await connection.sendRawTransaction(signed.serialize(), {
-      skipPreflight: false, // ✅ important fix
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
       maxRetries: 3,
     })
 
     onStatus?.('Confirming transaction...')
-    await connection.confirmTransaction({
-      signature,
-      blockhash,
-      lastValidBlockHeight,
-    })
+    await connection.confirmTransaction(
+      { signature, blockhash, lastValidBlockHeight },
+      'confirmed'
+    )
 
-    onStatus?.('Sent successfully!')
+    onStatus?.('✅ Sent successfully!')
     return { success: true, signature }
 
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-
-    // ✅ Treat duplicate as success
-    if (message.includes('already been processed')) {
-      return { success: true, error: message }
-    }
-
-    return { success: false, error: message }
+    const friendly = parseTransactionError(error)
+    if (friendly.startsWith('✅')) return { success: true, error: friendly }
+    return { success: false, error: friendly }
   }
 }
 
@@ -115,11 +128,9 @@ export async function sendUSDCViaProgram(
   try {
     const program = getProgram(connection, wallet)
     const recipient = new PublicKey(recipientAddress)
-
     const senderATA = await getAssociatedTokenAddress(USDC_MINT, wallet.publicKey)
     const recipientATA = await getAssociatedTokenAddress(USDC_MINT, recipient)
     const treasuryATA = await getAssociatedTokenAddress(USDC_MINT, TREASURY)
-
     const mint = await getMint(connection, USDC_MINT)
     const amountInDecimals = new BN(amount * Math.pow(10, mint.decimals))
 
@@ -145,25 +156,15 @@ export async function sendUSDCViaProgram(
       )
     }
 
-    // ✅ FIX setup transaction too
     if (setupTx.instructions.length > 0) {
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized')
       setupTx.recentBlockhash = blockhash
       setupTx.feePayer = wallet.publicKey
-
       const signed = await wallet.signTransaction(setupTx)
-      const sig = await connection.sendRawTransaction(signed.serialize(), {
-        skipPreflight: false,
-      })
-
-      await connection.confirmTransaction({
-        signature: sig,
-        blockhash,
-        lastValidBlockHeight,
-      })
+      const sig = await connection.sendRawTransaction(signed.serialize())
+      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight })
     }
 
-    // Main program tx (Anchor handles blockhash internally)
     const tx = await program.methods
       .sendRemittance(amountInDecimals, memo)
       .accounts({
@@ -176,14 +177,9 @@ export async function sendUSDCViaProgram(
       .rpc()
 
     return { success: true, signature: tx }
-
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-
-    if (message.includes('already been processed')) {
-      return { success: true, error: message }
-    }
-
-    return { success: false, error: message }
+    const friendly = parseTransactionError(error)
+    if (friendly.startsWith('✅')) return { success: true, error: friendly }
+    return { success: false, error: friendly }
   }
 }

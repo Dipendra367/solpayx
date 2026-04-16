@@ -30,6 +30,9 @@ export default function Dashboard() {
   const [txLink, setTxLink] = useState('')
   const [sending, setSending] = useState(false)
 
+  // ✅ Dynamic URL
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://solpayx.vercel.app'
+
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
@@ -292,7 +295,7 @@ export default function Dashboard() {
               <h2 className="font-semibold text-gray-200 mb-4">MY BLINK LINK</h2>
               <div className="bg-gray-800 rounded-lg px-3 py-2 mb-3">
                 <p className="text-purple-400 text-xs font-mono">
-                  localhost:3000/pay/{publicKey?.toString().slice(0, 8)}...
+                  {appUrl}/pay/{publicKey?.toString().slice(0, 8)}...
                 </p>
               </div>
               <p className="text-gray-400 text-xs mb-4">
@@ -306,7 +309,7 @@ export default function Dashboard() {
                     <p className="text-xs text-gray-400">Instant · Near-zero fees · Solana</p>
                   </div>
                   <button
-                    onClick={() => navigator.clipboard.writeText(`http://localhost:3000/pay/${publicKey?.toString()}`)}
+                    onClick={() => navigator.clipboard.writeText(`${appUrl}/pay/${publicKey?.toString()}`)}
                     className="bg-white text-black text-xs font-semibold px-3 py-1 rounded-lg">
                     Copy
                   </button>
@@ -360,10 +363,10 @@ export default function Dashboard() {
               <h2 className="font-semibold text-gray-200 mb-4">Your Payment Link</h2>
               <div className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2 mb-4">
                 <p className="text-purple-400 text-xs font-mono flex-1 truncate">
-                  localhost:3000/pay/{publicKey?.toString()}
+                  {appUrl}/pay/{publicKey?.toString()}
                 </p>
                 <button
-                  onClick={() => navigator.clipboard.writeText(`http://localhost:3000/pay/${publicKey?.toString()}`)}
+                  onClick={() => navigator.clipboard.writeText(`${appUrl}/pay/${publicKey?.toString()}`)}
                   className="text-xs text-gray-400 hover:text-white shrink-0">
                   Copy
                 </button>

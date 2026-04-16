@@ -1,7 +1,7 @@
 'use client'
 import { useParams } from 'next/navigation'
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { sendUSDC } from '@/lib/transfer'
 import { Transaction } from '@solana/web3.js'
@@ -23,10 +23,21 @@ export default function PayPage() {
 
   const quickAmounts = [1, 5, 10, 25, 50, 100]
 
-  // ✅ Dynamic URL based on where app is running
-  const appUrl = typeof window !== 'undefined' 
-    ? window.location.origin 
+  const appUrl = typeof window !== 'undefined'
+    ? window.location.origin
     : 'https://solpayx.vercel.app'
+
+  // ✅ Mobile deep-link: redirect into Phantom's in-app browser
+  useEffect(() => {
+    const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    const isInPhantom = navigator.userAgent.includes('Phantom')
+
+    if (mobile && !isInPhantom && !connected) {
+      const currentUrl = encodeURIComponent(window.location.href)
+      const phantomDeepLink = `https://phantom.app/ul/browse/${currentUrl}?ref=${encodeURIComponent(window.location.origin)}`
+      window.location.href = phantomDeepLink
+    }
+  }, [connected])
 
   const handleSend = async (customAmount?: number) => {
     if (!connected || !publicKey || !signTransaction) {
@@ -141,7 +152,6 @@ export default function PayPage() {
       <div className="w-full max-w-md mt-6 bg-gray-900 rounded-xl p-4 border border-gray-800">
         <p className="text-xs text-gray-500 text-center mb-2">Share your payment link</p>
         <div className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2">
-          {/* ✅ Now shows correct URL */}
           <p className="text-xs text-purple-400 font-mono flex-1 truncate">
             {appUrl}/pay/{recipient}
           </p>

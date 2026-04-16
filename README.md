@@ -18,7 +18,30 @@ Send $100 to family in Nepal from the US in **under 3 seconds** for a fraction o
 
 ---
 ## 🖼️ Demo Preview
-<p align="center"> <img src="https://github.com/user-attachments/assets/32da3cf9-0740-44d2-b8ae-8031e335424c" width="45%" height="220"/> <img src="https://github.com/user-attachments/assets/020a453a-e8dc-47cf-be4e-a876ba90ba40" width="45%" height="220"/> </p> <p align="center"> <img src="https://github.com/user-attachments/assets/ec0ab212-f237-4c4d-8a25-3d788c2990d1" width="45%" height="220"/> <img src="https://github.com/user-attachments/assets/15c50aa1-f518-4a59-8a9e-d1c8882b7291" width="45%" height="220"/> </p> <p align="center"> <img src="https://github.com/user-attachments/assets/7a6309e2-4638-4139-b384-cb3147aa1cab" width="60%" height="260"/> </p>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/32da3cf9-0740-44d2-b8ae-8031e335424c" width="85%"/>
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/020a453a-e8dc-47cf-be4e-a876ba90ba40" width="85%"/>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/ec0ab212-f237-4c4d-8a25-3d788c2990d1" width="85%"/>
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/15c50aa1-f518-4a59-8a9e-d1c8882b7291" width="85%"/>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="https://github.com/user-attachments/assets/7a6309e2-4638-4139-b384-cb3147aa1cab" width="50%"/>
+    </td>
+  </tr>
+</table>
 
 ---
 

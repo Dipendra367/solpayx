@@ -23,6 +23,11 @@ export default function PayPage() {
 
   const quickAmounts = [1, 5, 10, 25, 50, 100]
 
+  // ✅ Dynamic URL based on where app is running
+  const appUrl = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : 'https://solpayx.vercel.app'
+
   const handleSend = async (customAmount?: number) => {
     if (!connected || !publicKey || !signTransaction) {
       setStatus('Please connect your wallet first!')
@@ -136,11 +141,12 @@ export default function PayPage() {
       <div className="w-full max-w-md mt-6 bg-gray-900 rounded-xl p-4 border border-gray-800">
         <p className="text-xs text-gray-500 text-center mb-2">Share your payment link</p>
         <div className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2">
+          {/* ✅ Now shows correct URL */}
           <p className="text-xs text-purple-400 font-mono flex-1 truncate">
-            localhost:3000/pay/{recipient}
+            {appUrl}/pay/{recipient}
           </p>
           <button
-            onClick={() => navigator.clipboard.writeText(`http://localhost:3000/pay/${recipient}`)}
+            onClick={() => navigator.clipboard.writeText(`${appUrl}/pay/${recipient}`)}
             className="text-xs text-gray-400 hover:text-white transition-colors shrink-0"
           >
             Copy
